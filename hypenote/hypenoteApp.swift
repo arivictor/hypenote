@@ -2,7 +2,7 @@
 //  hypenoteApp.swift
 //  hypenote
 //
-//  Created by Ari Laverty on 1/9/2025.
+//  Main app entry point
 //
 
 import SwiftUI
@@ -12,6 +12,23 @@ struct hypenoteApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("New Note") {
+                    // TODO: Send new note command
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+            
+            CommandGroup(after: .saveItem) {
+                Button("Toggle Preview") {
+                    // TODO: Send toggle preview command
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+            }
         }
     }
 }
