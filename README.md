@@ -1,6 +1,8 @@
 # hypenote
 
-A minimal, fast Markdown Zettelkasten-style note app for macOS built with SwiftUI.
+![hypenote](cover.png)
+
+A hyper minimal, fast Markdown Zettelkasten-style note app for macOS.
 
 ## Features
 
