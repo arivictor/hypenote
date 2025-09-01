@@ -11,6 +11,7 @@ import Carbon
 class HotkeyManager: ObservableObject {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerUPP?
+    private var eventHandlerRef: EventHandlerRef?
     private var eventHandlerInstalled = false
     
     private let hotkeySignature: FourCharCode = 0x68706E74 // 'hpnt'
@@ -62,7 +63,7 @@ class HotkeyManager: ObservableObject {
     
     private func setupEventHandler() {
         eventHandler = NewEventHandlerUPP { (nextHandler, theEvent, userData) -> OSStatus in
-            guard let userData = userData else { return eventNotHandledErr }
+            guard let userData = userData else { return OSStatus(eventNotHandledErr) }
             
             let hotkeyManager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
             
@@ -84,22 +85,24 @@ class HotkeyManager: ObservableObject {
                 return noErr
             }
             
-            return eventNotHandledErr
+            return OSStatus(eventNotHandledErr)
         }
         
         guard let eventHandler = eventHandler else { return }
         
         let eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: OSType(kEventHotKeyPressed))
         
+        var eventHandlerRef: EventHandlerRef?
         let status = InstallEventHandler(
             GetEventDispatcherTarget(),
             eventHandler,
             1,
             [eventType],
             Unmanaged.passUnretained(self).toOpaque(),
-            nil
+            &eventHandlerRef
         )
         
+        self.eventHandlerRef = eventHandlerRef
         eventHandlerInstalled = (status == noErr)
         
         if !eventHandlerInstalled {
@@ -108,10 +111,15 @@ class HotkeyManager: ObservableObject {
     }
     
     private func removeEventHandler() {
-        if eventHandlerInstalled, let eventHandler = eventHandler {
-            RemoveEventHandler(eventHandler)
-            DisposeEventHandlerUPP(eventHandler)
-            self.eventHandler = nil
+        if eventHandlerInstalled {
+            if let eventHandlerRef = eventHandlerRef {
+                RemoveEventHandler(eventHandlerRef)
+                self.eventHandlerRef = nil
+            }
+            if let eventHandler = eventHandler {
+                DisposeEventHandlerUPP(eventHandler)
+                self.eventHandler = nil
+            }
             eventHandlerInstalled = false
         }
     }
