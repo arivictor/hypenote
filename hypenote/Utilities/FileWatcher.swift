@@ -46,8 +46,4 @@ class FileWatcher: ObservableObject {
         dispatchSource?.cancel()
         dispatchSource = nil
     }
-    
-    deinit {
-        stopWatching()
-    }
 }
