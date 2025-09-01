@@ -22,6 +22,15 @@ class NoteIndex: ObservableObject {
     private let fileStorage: FileStorage
     private var cancellables = Set<AnyCancellable>()
     
+    // Debouncing for note updates to prevent list bouncing
+    private var pendingUpdates: [String: Note] = [:]
+    private var updateTimer: Timer?
+    private var isActivelyEditing = false
+    
+    deinit {
+        updateTimer?.invalidate()
+    }
+    
     init(fileStorage: FileStorage) {
         self.fileStorage = fileStorage
         setupSearchPublisher()
@@ -58,18 +67,63 @@ class NoteIndex: ObservableObject {
         indexNote(note)
     }
     
-    /// Update existing note in index
+    /// Update existing note in index with debouncing to prevent list bouncing
     func updateNote(_ note: Note) {
+        // Store the pending update
+        pendingUpdates[note.id] = note
+        
+        // Cancel existing timer
+        updateTimer?.invalidate()
+        
+        // If actively editing, debounce the update
+        if isActivelyEditing {
+            updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+                self?.processPendingUpdates()
+            }
+        } else {
+            // Process immediately if not actively editing
+            processPendingUpdates()
+        }
+    }
+    
+    /// Process all pending note updates
+    private func processPendingUpdates() {
+        updateTimer?.invalidate()
+        updateTimer = nil
+        
+        for (noteId, note) in pendingUpdates {
+            performImmediateUpdate(note)
+        }
+        
+        pendingUpdates.removeAll()
+        
+        // Only sort if not actively editing to prevent bouncing
+        if !isActivelyEditing {
+            notes.sort { $0.updatedAt > $1.updatedAt }
+        }
+    }
+    
+    /// Perform immediate note update without sorting
+    private func performImmediateUpdate(_ note: Note) {
         if let index = notes.firstIndex(where: { $0.id == note.id }) {
             let oldNote = notes[index]
             notes[index] = note
-            notes.sort { $0.updatedAt > $1.updatedAt }
             
             // Remove old indexing
             removeNoteFromIndexes(oldNote)
             
             // Add new indexing
             indexNote(note)
+        }
+    }
+    
+    /// Set active editing state to control list reordering
+    func setActivelyEditing(_ editing: Bool) {
+        isActivelyEditing = editing
+        
+        // If we're done editing, process any pending updates and sort
+        if !editing {
+            processPendingUpdates()
         }
     }
     

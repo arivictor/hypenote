@@ -47,14 +47,22 @@ struct NoteEditorView: View {
                     editingNote = selectedNote
                     newTitle = selectedNote.title
                     newTags = selectedNote.tags.joined(separator: ", ")
+                    // Mark as actively editing to prevent list bouncing
+                    appViewModel.noteIndex.setActivelyEditing(true)
                 }
                 .onChange(of: selectedNote) { newNote in
+                    // Mark as no longer actively editing the previous note
+                    appViewModel.noteIndex.setActivelyEditing(false)
                     saveCurrentNote()
                     editingNote = newNote
                     newTitle = newNote.title
                     newTags = newNote.tags.joined(separator: ", ")
+                    // Mark as actively editing the new note
+                    appViewModel.noteIndex.setActivelyEditing(true)
                 }
                 .onDisappear {
+                    // Mark as no longer actively editing when view disappears
+                    appViewModel.noteIndex.setActivelyEditing(false)
                     saveCurrentNote()
                 }
             } else {
@@ -98,9 +106,16 @@ struct NoteEditorView: View {
                     .onSubmit {
                         saveTitle()
                     }
+                    .onAppear {
+                        // Focus the text field when editing starts
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            NSApp.keyWindow?.makeFirstResponder(nil)
+                        }
+                    }
                 } else {
                     Button(action: {
                         editingTitle = true
+                        newTitle = note.title // Ensure we start with current title
                     }) {
                         Text(note.title.isEmpty ? "Untitled" : note.title)
                             .font(.title2)
@@ -192,6 +207,12 @@ struct NoteEditorView: View {
         if let note = editingNote {
             Task {
                 await appViewModel.saveNote(note)
+                // Update local editing state to reflect saved changes
+                await MainActor.run {
+                    if let updatedNote = appViewModel.selectedNote, updatedNote.id == note.id {
+                        editingNote = updatedNote
+                    }
+                }
             }
         }
     }
@@ -202,6 +223,13 @@ struct NoteEditorView: View {
         if let selectedNote = appViewModel.selectedNote, newTitle != selectedNote.title {
             Task {
                 await appViewModel.renameNote(selectedNote, newTitle: newTitle)
+                // Update local state to reflect the saved title
+                await MainActor.run {
+                    if let updatedNote = appViewModel.selectedNote, updatedNote.id == selectedNote.id {
+                        newTitle = updatedNote.title
+                        editingNote = updatedNote
+                    }
+                }
             }
         }
     }

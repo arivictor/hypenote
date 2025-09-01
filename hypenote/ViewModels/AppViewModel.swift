@@ -89,6 +89,7 @@ class AppViewModel: ObservableObject {
             try await fileStorage.saveNote(updatedNote)
             noteIndex.updateNote(updatedNote)
             
+            // Update selectedNote if it's the same note being saved
             if selectedNote?.id == note.id {
                 selectedNote = updatedNote
             }
@@ -140,6 +141,7 @@ class AppViewModel: ObservableObject {
             
             noteIndex.updateNote(updatedNote)
             
+            // Update selectedNote if it's the same note being renamed
             if selectedNote?.id == note.id {
                 selectedNote = updatedNote
             }
