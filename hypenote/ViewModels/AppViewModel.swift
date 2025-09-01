@@ -23,7 +23,10 @@ class AppViewModel: ObservableObject {
     @Published var quickEntryWindowController: QuickEntryWindowController?
     
     init() {
-        // Initialize properties with dependencies in correct order
+        // Initialize all properties as local variables first
+        let vaultManager = VaultManager()
+        let spotlightIndexer = SpotlightIndexer()
+        let hotkeyManager = HotkeyManager()
         let fileStorage = FileStorage(vaultManager: vaultManager)
         let noteIndex = NoteIndex(fileStorage: fileStorage)
         let importExportManager = ImportExportManager(
@@ -33,8 +36,11 @@ class AppViewModel: ObservableObject {
         )
         
         // Assign to self properties
+        self.vaultManager = vaultManager
         self.fileStorage = fileStorage
         self.noteIndex = noteIndex
+        self.spotlightIndexer = spotlightIndexer
+        self.hotkeyManager = hotkeyManager
         self.importExportManager = importExportManager
         
         // Set up initial state

@@ -42,7 +42,7 @@ class FileWatcher: ObservableObject {
     }
     
     /// Stop watching for file changes
-    nonisolated func stopWatching() {
+    func stopWatching() {
         dispatchSource?.cancel()
         dispatchSource = nil
     }
