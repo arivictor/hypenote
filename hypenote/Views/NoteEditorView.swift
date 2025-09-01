@@ -51,8 +51,8 @@ struct NoteEditorView: View {
                 .onChange(of: selectedNote) { newNote in
                     saveCurrentNote()
                     editingNote = newNote
-                    newTitle = newNote?.title ?? ""
-                    newTags = newNote?.tags.joined(separator: ", ") ?? ""
+                    newTitle = newNote.title
+                    newTags = newNote.tags.joined(separator: ", ")
                 }
                 .onDisappear {
                     saveCurrentNote()
