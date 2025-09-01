@@ -16,20 +16,38 @@ class AppViewModel: ObservableObject {
     @Published var selectedNote: Note?
     @Published var showingVaultPicker = false
     
+    // Advanced features
+    @Published var spotlightIndexer = SpotlightIndexer()
+    @Published var hotkeyManager = HotkeyManager()
+    @Published var importExportManager: ImportExportManager
+    @Published var quickEntryWindowController: QuickEntryWindowController?
+    
     init() {
         self.fileStorage = FileStorage(vaultManager: vaultManager)
         self.noteIndex = NoteIndex(fileStorage: fileStorage)
+        self.importExportManager = ImportExportManager(
+            fileStorage: fileStorage,
+            noteIndex: noteIndex,
+            spotlightIndexer: spotlightIndexer
+        )
         
         // Set up initial state
         if !vaultManager.isVaultReady {
             showingVaultPicker = true
         }
+        
+        setupHotkeyManager()
     }
     
     /// Initialize app by loading notes if vault is ready
     func initializeApp() async {
         if vaultManager.isVaultReady {
             await noteIndex.loadNotes()
+            
+            // Index notes for Spotlight if enabled
+            if spotlightIndexer.isIndexingAvailable {
+                await spotlightIndexer.indexNotes(noteIndex.notes)
+            }
         }
     }
     
@@ -42,6 +60,9 @@ class AppViewModel: ObservableObject {
             try await fileStorage.saveNote(note)
             noteIndex.addNote(note)
             selectedNote = note
+            
+            // Index for Spotlight
+            await spotlightIndexer.indexNote(note)
         } catch {
             print("Error creating note: \(error)")
         }
@@ -59,6 +80,9 @@ class AppViewModel: ObservableObject {
             if selectedNote?.id == note.id {
                 selectedNote = updatedNote
             }
+            
+            // Update Spotlight index
+            await spotlightIndexer.indexNote(updatedNote)
         } catch {
             print("Error saving note: \(error)")
         }
@@ -73,6 +97,9 @@ class AppViewModel: ObservableObject {
             if selectedNote?.id == note.id {
                 selectedNote = nil
             }
+            
+            // Remove from Spotlight index
+            await spotlightIndexer.removeNote(note)
         } catch {
             print("Error deleting note: \(error)")
         }
@@ -104,6 +131,9 @@ class AppViewModel: ObservableObject {
             if selectedNote?.id == note.id {
                 selectedNote = updatedNote
             }
+            
+            // Update Spotlight index
+            await spotlightIndexer.indexNote(updatedNote)
         } catch {
             print("Error renaming note: \(error)")
         }
@@ -116,6 +146,9 @@ class AppViewModel: ObservableObject {
         if vaultManager.isVaultReady {
             showingVaultPicker = false
             await noteIndex.loadNotes()
+            
+            // Reindex for Spotlight
+            await spotlightIndexer.indexNotes(noteIndex.notes)
         }
     }
     
@@ -127,5 +160,23 @@ class AppViewModel: ObservableObject {
             showingVaultPicker = false
             await noteIndex.loadNotes()
         }
+    }
+    
+    /// Show quick entry window
+    func showQuickEntry() {
+        if quickEntryWindowController == nil {
+            quickEntryWindowController = QuickEntryWindowController(appViewModel: self)
+        }
+        quickEntryWindowController?.showWindow(nil)
+    }
+    
+    /// Setup hotkey manager
+    private func setupHotkeyManager() {
+        hotkeyManager.onHotkeyPressed = { [weak self] in
+            self?.showQuickEntry()
+        }
+        
+        // Register default hotkey (Cmd+Shift+N)
+        _ = hotkeyManager.registerHotkey()
     }
 }

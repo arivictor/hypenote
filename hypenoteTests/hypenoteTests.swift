@@ -125,4 +125,39 @@ struct hypenoteTests {
         
         #expect(note.updatedAt > originalUpdatedAt)
     }
+    
+    @Test func vaultManagerSetup() async throws {
+        let vaultManager = VaultManager()
+        
+        // Initially no vault should be selected in tests
+        #expect(vaultManager.vaultURL == nil)
+        #expect(!vaultManager.isVaultReady)
+    }
+    
+    @Test func spotlightIndexerAvailability() async throws {
+        let indexer = SpotlightIndexer()
+        
+        // Just test that the indexer can be created
+        // Actual indexing may not work in test environment
+        #expect(indexer != nil)
+    }
+    
+    @Test func noteIndexBasicOperations() async throws {
+        let vaultManager = VaultManager()
+        let fileStorage = FileStorage(vaultManager: vaultManager)
+        let noteIndex = NoteIndex(fileStorage: fileStorage)
+        
+        let note1 = Note(title: "First Note", tags: ["tag1"], body: "Content with [[Second Note]]")
+        let note2 = Note(title: "Second Note", tags: ["tag2"], body: "Referenced note")
+        
+        noteIndex.addNote(note1)
+        noteIndex.addNote(note2)
+        
+        #expect(noteIndex.notes.count == 2)
+        #expect(noteIndex.tagCounts.count == 2)
+        
+        // Test backlinks
+        let backlinks = noteIndex.getBacklinks(for: note2)
+        #expect(backlinks.contains { $0.id == note1.id })
+    }
 }

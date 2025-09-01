@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var appViewModel = AppViewModel()
+    @State private var showingSettings = false
     
     var body: some View {
         Group {
@@ -20,6 +21,14 @@ struct ContentView: View {
         }
         .task {
             await appViewModel.initializeApp()
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(
+                appViewModel: appViewModel,
+                hotkeyManager: appViewModel.hotkeyManager,
+                importExportManager: appViewModel.importExportManager,
+                spotlightIndexer: appViewModel.spotlightIndexer
+            )
         }
     }
     
@@ -52,6 +61,13 @@ struct ContentView: View {
                 .help("New Note (⌘N)")
                 
                 Button(action: {
+                    appViewModel.showQuickEntry()
+                }) {
+                    Image(systemName: "plus.circle")
+                }
+                .help("Quick Entry (⌘⇧N)")
+                
+                Button(action: {
                     appViewModel.noteIndex.clearFilters()
                 }) {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -60,14 +76,20 @@ struct ContentView: View {
                 
                 Menu {
                     Button("Settings...") {
-                        // TODO: Show settings
+                        showingSettings = true
                     }
+                    .keyboardShortcut(",", modifiers: .command)
                     
                     Divider()
                     
                     Button("Choose Vault...") {
                         appViewModel.showingVaultPicker = true
                     }
+                    
+                    Button("Quick Entry...") {
+                        appViewModel.showQuickEntry()
+                    }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
