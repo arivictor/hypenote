@@ -1,1 +1,3 @@
 # hypenote
+
+![hypenote](cover.png)
