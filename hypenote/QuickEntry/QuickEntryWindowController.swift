@@ -49,7 +49,7 @@ struct QuickEntryView: View {
     let onClose: () -> Void
     
     @State private var title = ""
-    @State private var body = ""
+    @State private var noteBody = ""
     @State private var tags = ""
     @State private var isCreating = false
     
@@ -97,7 +97,7 @@ struct QuickEntryView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                TextEditor(text: $body)
+                TextEditor(text: $noteBody)
                     .font(.system(.body, design: .monospaced))
                     .border(Color.gray.opacity(0.3), width: 1)
                     .cornerRadius(4)
@@ -112,7 +112,7 @@ struct QuickEntryView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .command)
-                .disabled(body.isEmpty)
+                .disabled(noteBody.isEmpty)
             }
         }
         .padding()
@@ -126,7 +126,7 @@ struct QuickEntryView: View {
     }
     
     private func createNote() {
-        guard !body.isEmpty else { return }
+        guard !noteBody.isEmpty else { return }
         
         isCreating = true
         
@@ -138,7 +138,7 @@ struct QuickEntryView: View {
         Task {
             await appViewModel.createNote(
                 title: title.isEmpty ? "Quick Note" : title,
-                body: body,
+                body: noteBody,
                 tags: parsedTags
             )
             

@@ -28,7 +28,7 @@ class HotkeyManager: ObservableObject {
     }
     
     /// Register global hotkey (Cmd+Shift+N by default)
-    func registerHotkey(keyCode: UInt32 = 45, modifiers: UInt32 = cmdKey + shiftKey) -> Bool {
+    func registerHotkey(keyCode: UInt32 = 45, modifiers: UInt32 = UInt32(cmdKey + shiftKey)) -> Bool {
         unregisterHotkey() // Remove existing hotkey first
         
         let eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: OSType(kEventHotKeyPressed))
