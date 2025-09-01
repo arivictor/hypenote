@@ -7,7 +7,6 @@
 
 import Foundation
 import CoreSpotlight
-import MobileCoreServices
 import UniformTypeIdentifiers
 
 @MainActor
