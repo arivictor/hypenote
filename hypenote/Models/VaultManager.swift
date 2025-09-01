@@ -43,9 +43,11 @@ class VaultManager: ObservableObject {
     
     /// Load vault URL from UserDefaults
     private func loadVaultURL() {
-        if let data = userDefaults.data(forKey: vaultURLKey),
-           let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: nil) {
-            self.vaultURL = url
+        if let data = userDefaults.data(forKey: vaultURLKey) {
+            var isStale: Bool = false
+            if let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &isStale) {
+                self.vaultURL = url
+            }
         }
     }
     
@@ -53,7 +55,7 @@ class VaultManager: ObservableObject {
     func setVaultURL(_ url: URL) {
         do {
             let bookmarkData = try url.bookmarkData(
-                options: [.withSecurityScope, .securityScopeAllowOnlyReadKey],
+                options: [.withSecurityScope],
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )

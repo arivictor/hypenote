@@ -74,8 +74,8 @@ class SpotlightIndexer: ObservableObject {
         attributeSet.textContent = "\(note.title) \(note.body) \(note.tags.joined(separator: " "))"
         
         // Custom attributes
-        attributeSet.setValue(note.id, forCustomKey: CSCustomAttributeKey(keyName: "zettelkasten_id")!)
-        attributeSet.setValue(note.filename, forCustomKey: CSCustomAttributeKey(keyName: "filename")!)
+        attributeSet.setValue(note.id as NSString, forCustomKey: CSCustomAttributeKey(keyName: "zettelkasten_id")!)
+        attributeSet.setValue(note.filename as NSString, forCustomKey: CSCustomAttributeKey(keyName: "filename")!)
         
         // Domain identifier for easy removal
         attributeSet.domainIdentifier = bundleIdentifier
@@ -99,7 +99,7 @@ class SpotlightIndexer: ObservableObject {
     func checkIndexingStatus() async -> String {
         do {
             let status = try await searchableIndex.fetchLastClientState()
-            return status != nil ? "Indexed" : "Not indexed"
+            return status.isEmpty ? "Not indexed" : "Indexed"
         } catch {
             return "Error checking status"
         }
