@@ -8,17 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var store: NotesStore
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationSplitView {
+            SidebarView(store: store)
+                .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 400)
+        } detail: {
+            EditorView(store: store)
         }
-        .padding()
+        .navigationTitle("HypeNote")
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(NotesStore())
 }
