@@ -1,46 +1,97 @@
-//
-//  hypenoteApp.swift
-//  hypenote
-//
-//  Created by Ari Laverty on 1/9/2025.
-//
+
+/*
+    Project: HypeNote 📝
+    Authors:
+    - Ari Laverty (gh: arivictor)
+    
+    © 2025 Ari Laverty. All rights reserved.
+    License: Apache-2.0 + Common Clause
+*/
 
 import SwiftUI
+import Foundation
 
-@main
-struct hypenoteApp: App {
-    @StateObject private var store = NotesStore()
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(store)
-        }
-        .defaultSize(width: 1000, height: 700)
-        .commands {
-            CommandGroup(after: .newItem) {
-                Button("New Note") {
-                    store.createNote()
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                
-                Button("New Folder") {
-                    // This would show the new folder dialog
-                    NotificationCenter.default.post(name: .newFolder, object: nil)
-                }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
-            }
+struct Note: Identifiable, Hashable {
+    let id = UUID()
+    var title: String
+    var body: String
+}
+
+struct NoteDetailView: View {
+    @Binding var note: Note
+    var body: some View {
+        VStack(alignment: .leading){
+            TextField("Title", text: $note.title)
+                .font(.title)
+                .padding(.bottom)
+            TextEditor(text: $note.body)
+                .font(.body)
+                .border(Color.white.opacity(0.5))
             
-            CommandGroup(after: .toolbar) {
-                Button("Focus Search") {
-                    // Could focus search when implemented
-                }
-                .keyboardShortcut("f", modifiers: .command)
-            }
         }
+        .padding()
+        .navigationTitle(note.title)
     }
 }
 
-extension Notification.Name {
-    static let newFolder = Notification.Name("newFolder")
+#Preview {
+    @Previewable @State var sampleNote = Note(title: "preview", body: "Preview body")
+    NoteDetailView(note: $sampleNote)
+}
+
+struct ContentView: View {
+    @State private var notes: [Note] = [
+        Note(title: "Welcome", body: "Start writing notes here!")
+    ]
+    @State private var selectedNote: Note?
+    
+    var body: some View {
+        NavigationSplitView{
+            List(selection: $selectedNote) {
+                ForEach(notes){ note in
+                    Text(note.title)
+                        .tag(note)
+                }
+            }
+            .navigationTitle("My Notes")
+            .listStyle(.sidebar)
+            .frame(minWidth: 200)
+            .toolbar {
+                Button("New Note"){
+                    let newNote = Note(title: "Untitled", body: "")
+                    notes.append(newNote)
+                    selectedNote = newNote
+                }
+            }
+        }
+    detail:
+        {
+            if let note = selectedNote {
+                NoteDetailView(note: binding(for: note))
+            } else{
+                Text("Select a note")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+    private func binding(for note: Note) -> Binding<Note> {
+        guard let index = notes.firstIndex(where: { $0.id == note.id}) else {
+            fatalError("Note not found")
+        }
+        return $notes[index]
+    }
+}
+
+#Preview {
+    ContentView()
+}
+
+
+@main
+struct HypeNoteApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
 }
