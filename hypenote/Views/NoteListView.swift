@@ -13,19 +13,10 @@ struct NoteListView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Search bar
+            // Simple search bar
             SearchBar(text: $appViewModel.noteIndex.searchText)
-                .padding(.horizontal)
+                .padding(.horizontal, 12)
                 .padding(.top, 8)
-            
-            // Tag filter section
-            if !appViewModel.noteIndex.tagCounts.isEmpty {
-                TagFilterView(
-                    tagCounts: appViewModel.noteIndex.tagCounts,
-                    selectedTags: $appViewModel.noteIndex.selectedTags
-                )
-                .padding(.horizontal)
-            }
             
             // Notes list
             List(appViewModel.noteIndex.filteredNotes, id: \.id, selection: $appViewModel.selectedNote) { note in
@@ -34,7 +25,7 @@ struct NoteListView: View {
             }
             .listStyle(.sidebar)
             
-            // Toolbar
+            // Minimal bottom bar
             HStack {
                 Button(action: {
                     Task {
@@ -42,18 +33,21 @@ struct NoteListView: View {
                     }
                 }) {
                     Image(systemName: "plus")
+                        .font(.system(size: 14))
                 }
+                .buttonStyle(.plain)
                 .help("New Note (⌘N)")
                 
                 Spacer()
                 
                 if !appViewModel.noteIndex.filteredNotes.isEmpty {
-                    Text("\(appViewModel.noteIndex.filteredNotes.count) notes")
-                        .font(.caption)
+                    Text("\(appViewModel.noteIndex.filteredNotes.count)")
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
-            .padding()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(.bar)
         }
     }
@@ -63,108 +57,30 @@ struct SearchBar: View {
     @Binding var text: String
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: 12))
                 .foregroundColor(.secondary)
             
-            TextField("Search notes...", text: $text)
+            TextField("Search", text: $text)
                 .textFieldStyle(.plain)
+                .font(.system(size: 13))
             
             if !text.isEmpty {
                 Button(action: {
                     text = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(8)
-        .background(.quaternary)
-        .cornerRadius(8)
-    }
-}
-
-struct TagFilterView: View {
-    let tagCounts: [(tag: String, count: Int)]
-    @Binding var selectedTags: Set<String>
-    @State private var isExpanded = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Tags")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                if !selectedTags.isEmpty {
-                    Button("Clear") {
-                        selectedTags.removeAll()
-                    }
-                    .font(.caption)
-                }
-                
-                Button(action: {
-                    isExpanded.toggle()
-                }) {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            if isExpanded {
-                LazyVGrid(columns: [
-                    GridItem(.adaptive(minimum: 80), spacing: 4)
-                ], spacing: 4) {
-                    ForEach(tagCounts, id: \.tag) { tagCount in
-                        TagChip(
-                            tag: tagCount.tag,
-                            count: tagCount.count,
-                            isSelected: selectedTags.contains(tagCount.tag)
-                        ) {
-                            if selectedTags.contains(tagCount.tag) {
-                                selectedTags.remove(tagCount.tag)
-                            } else {
-                                selectedTags.insert(tagCount.tag)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .padding(.vertical, 8)
-    }
-}
-
-struct TagChip: View {
-    let tag: String
-    let count: Int
-    let isSelected: Bool
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 4) {
-                Text(tag)
-                    .font(.caption)
-                
-                Text("\(count)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isSelected ? .accentColor : .quaternary)
-            .foregroundColor(isSelected ? .white : .primary)
-            .cornerRadius(12)
-        }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(.quaternary.opacity(0.5))
+        .cornerRadius(6)
     }
 }
 
@@ -172,48 +88,27 @@ struct NoteRowView: View {
     let note: Note
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text(note.title.isEmpty ? "Untitled" : note.title)
-                    .font(.headline)
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                 
                 Spacer()
                 
                 Text(note.updatedAt, style: .relative)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.tertiary)
             }
             
             if !note.body.isEmpty {
                 Text(note.body)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
             }
-            
-            if !note.tags.isEmpty {
-                HStack {
-                    ForEach(note.tags.prefix(3), id: \.self) { tag in
-                        Text(tag)
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.quaternary)
-                            .cornerRadius(4)
-                    }
-                    
-                    if note.tags.count > 3 {
-                        Text("+\(note.tags.count - 3)")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                }
-            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 }
 

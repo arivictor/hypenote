@@ -10,29 +10,27 @@ import SwiftUI
 struct NoteEditorView: View {
     @ObservedObject var appViewModel: AppViewModel
     @State private var editingNote: Note?
-    @State private var showingPreview = true
+    @State private var showingPreview = false
     @State private var editingTitle = false
     @State private var newTitle = ""
-    @State private var newTags = ""
+    @State private var showingMetadata = false
     
     var body: some View {
         Group {
             if let selectedNote = appViewModel.selectedNote {
                 VStack(spacing: 0) {
-                    // Header with title and metadata
+                    // Clean header with just title
                     noteHeader(for: selectedNote)
                     
-                    Divider()
-                    
-                    // Editor content
+                    // Main editor content
                     HStack(spacing: 0) {
                         // Editor pane
                         VStack(spacing: 0) {
-                            editorToolbar
-                            
                             TextEditor(text: binding(for: selectedNote, keyPath: \.body))
-                                .font(.system(.body, design: .monospaced))
-                                .padding()
+                                .font(.system(size: 14, design: .default))
+                                .padding(20)
+                                .scrollContentBackground(.hidden)
+                                .background(.clear)
                         }
                         
                         if showingPreview {
@@ -43,10 +41,10 @@ struct NoteEditorView: View {
                         }
                     }
                 }
+                .background(.background)
                 .onAppear {
                     editingNote = selectedNote
                     newTitle = selectedNote.title
-                    newTags = selectedNote.tags.joined(separator: ", ")
                     // Mark as actively editing to prevent list bouncing
                     appViewModel.noteIndex.setActivelyEditing(true)
                 }
@@ -56,7 +54,6 @@ struct NoteEditorView: View {
                     saveCurrentNote()
                     editingNote = newNote
                     newTitle = newNote.title
-                    newTags = newNote.tags.joined(separator: ", ")
                     // Mark as actively editing the new note
                     appViewModel.noteIndex.setActivelyEditing(true)
                 }
@@ -65,9 +62,31 @@ struct NoteEditorView: View {
                     appViewModel.noteIndex.setActivelyEditing(false)
                     saveCurrentNote()
                 }
+                .toolbar {
+                    ToolbarItemGroup(placement: .automatic) {
+                        Button(action: {
+                            showingPreview.toggle()
+                        }) {
+                            Image(systemName: showingPreview ? "eye.slash" : "eye")
+                        }
+                        .help("Toggle Preview")
+                        
+                        Button(action: {
+                            showingMetadata.toggle()
+                        }) {
+                            Image(systemName: "info.circle")
+                        }
+                        .help("Toggle Info")
+                    }
+                }
+                .popover(isPresented: $showingMetadata, arrowEdge: .bottom) {
+                    metadataView(for: selectedNote)
+                        .padding()
+                        .frame(width: 300)
+                }
             } else {
                 // No note selected state
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 48))
                         .foregroundColor(.secondary)
@@ -78,6 +97,7 @@ struct NoteEditorView: View {
                     
                     Text("Select a note from the sidebar or create a new one")
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                     
                     Button("New Note") {
                         Task {
@@ -93,105 +113,92 @@ struct NoteEditorView: View {
     
     @ViewBuilder
     private func noteHeader(for note: Note) -> some View {
-        VStack(spacing: 8) {
-            HStack {
-                // Title editing
-                if editingTitle {
-                    TextField("Note title", text: $newTitle, onCommit: {
-                        saveTitle()
-                    })
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .textFieldStyle(.plain)
-                    .onSubmit {
-                        saveTitle()
-                    }
-                    .onAppear {
-                        // Focus the text field when editing starts
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            NSApp.keyWindow?.makeFirstResponder(nil)
-                        }
-                    }
-                } else {
-                    Button(action: {
-                        editingTitle = true
-                        newTitle = note.title // Ensure we start with current title
-                    }) {
-                        Text(note.title.isEmpty ? "Untitled" : note.title)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                Spacer()
-                
-                // Note metadata
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("ID: \(note.id)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Updated: \(note.updatedAt, style: .relative)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            // Tags editing
-            HStack {
-                Text("Tags:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                TextField("Add tags (comma separated)", text: $newTags, onCommit: {
-                    saveTags()
+        HStack {
+            // Clean title editing
+            if editingTitle {
+                TextField("Note title", text: $newTitle, onCommit: {
+                    saveTitle()
                 })
-                .font(.caption)
+                .font(.title2)
+                .fontWeight(.medium)
                 .textFieldStyle(.plain)
                 .onSubmit {
-                    saveTags()
+                    saveTitle()
                 }
-                
-                Spacer()
+            } else {
+                Button(action: {
+                    editingTitle = true
+                    newTitle = note.title
+                }) {
+                    Text(note.title.isEmpty ? "Untitled" : note.title)
+                        .font(.title2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
             }
+            
+            Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
         .background(.regularMaterial)
     }
     
-    private var editorToolbar: some View {
-        HStack {
-            Button(action: {
-                showingPreview.toggle()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: showingPreview ? "eye.slash" : "eye")
-                    Text(showingPreview ? "Hide Preview" : "Show Preview")
+    @ViewBuilder
+    private func metadataView(for note: Note) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Note Information")
+                .font(.headline)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("ID:")
+                        .fontWeight(.medium)
+                    Spacer()
+                    Text(note.id)
+                        .foregroundColor(.secondary)
                 }
-            }
-            .help("Toggle Preview (⌘⇧P)")
-            
-            Spacer()
-            
-            Button(action: {
-                Task {
-                    if let note = editingNote {
-                        await appViewModel.saveNote(note)
+                
+                HStack {
+                    Text("Created:")
+                        .fontWeight(.medium)
+                    Spacer()
+                    Text(note.createdAt, style: .date)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("Updated:")
+                        .fontWeight(.medium)
+                    Spacer()
+                    Text(note.updatedAt, style: .relative)
+                        .foregroundColor(.secondary)
+                }
+                
+                if !note.tags.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Tags:")
+                            .fontWeight(.medium)
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.adaptive(minimum: 60), spacing: 4)
+                        ], spacing: 4) {
+                            ForEach(note.tags, id: \.self) { tag in
+                                Text(tag)
+                                    .font(.caption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.quaternary)
+                                    .cornerRadius(8)
+                            }
+                        }
                     }
                 }
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "square.and.arrow.down")
-                    Text("Save")
-                }
             }
-            .help("Save Note (⌘S)")
+            .font(.caption)
         }
-        .padding()
-        .background(.bar)
     }
     
     private func binding(for note: Note, keyPath: WritableKeyPath<Note, String>) -> Binding<String> {
@@ -233,22 +240,6 @@ struct NoteEditorView: View {
             }
         }
     }
-    
-    private func saveTags() {
-        if var note = editingNote {
-            let tags = newTags
-                .components(separatedBy: ",")
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            
-            note.tags = tags
-            editingNote = note
-            
-            Task {
-                await appViewModel.saveNote(note)
-            }
-        }
-    }
 }
 
 struct MarkdownPreviewView: View {
@@ -259,15 +250,15 @@ struct MarkdownPreviewView: View {
             if let attributedString = try? AttributedString(markdown: markdown) {
                 Text(attributedString)
                     .textSelection(.enabled)
-                    .padding()
+                    .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text(markdown)
-                    .padding()
+                    .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .background(.regularMaterial)
+        .background(.background)
     }
 }
 

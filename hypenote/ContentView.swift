@@ -36,16 +36,7 @@ struct ContentView: View {
     private var mainInterface: some View {
         NavigationSplitView {
             NoteListView(appViewModel: appViewModel)
-                .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: 400)
-        } content: {
-            if let selectedNote = appViewModel.selectedNote {
-                BacklinksView(
-                    note: selectedNote,
-                    backlinks: appViewModel.noteIndex.getBacklinks(for: selectedNote),
-                    appViewModel: appViewModel
-                )
-                .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 300)
-            }
+                .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 350)
         } detail: {
             NoteEditorView(appViewModel: appViewModel)
         }
@@ -60,20 +51,6 @@ struct ContentView: View {
                 }
                 .help("New Note (⌘N)")
                 
-                Button(action: {
-                    appViewModel.showQuickEntry()
-                }) {
-                    Image(systemName: "plus.circle")
-                }
-                .help("Quick Entry (⌘⇧N)")
-                
-                Button(action: {
-                    appViewModel.noteIndex.clearFilters()
-                }) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                }
-                .help("Clear Filters")
-                
                 Menu {
                     Button("Settings...") {
                         showingSettings = true
@@ -85,18 +62,12 @@ struct ContentView: View {
                     Button("Choose Vault...") {
                         appViewModel.showingVaultPicker = true
                     }
-                    
-                    Button("Quick Entry...") {
-                        appViewModel.showQuickEntry()
-                    }
-                    .keyboardShortcut("n", modifiers: [.command, .shift])
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
                 .help("More Options")
             }
         }
-        .searchable(text: $appViewModel.noteIndex.searchText, prompt: "Search notes...")
     }
 }
 
