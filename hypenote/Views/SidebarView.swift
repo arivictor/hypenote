@@ -143,24 +143,38 @@ struct NoteRowView: View {
     @ObservedObject var store: NotesStore
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(note.title.isEmpty ? "Untitled" : note.title)
-                .font(.system(.body, design: .rounded))
-                .fontWeight(.medium)
-                .lineLimit(1)
-            
-            if !note.content.isEmpty {
-                Text(note.content.trimmingCharacters(in: .whitespacesAndNewlines))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(note.title.isEmpty ? "Untitled" : note.title)
+                    .font(.system(.body, design: .rounded))
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                    .foregroundColor(.primary)
+                
+                if !note.content.isEmpty {
+                    Text(previewText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                
+                HStack {
+                    Text(formatDate(note.modifiedAt))
+                        .font(.caption2)
+                        .foregroundColor(.tertiary)
+                    
+                    if !note.content.isEmpty {
+                        Spacer()
+                        Text("\(note.content.count) chars")
+                            .font(.caption2)
+                            .foregroundColor(.tertiary)
+                    }
+                }
             }
             
-            Text(formatDate(note.modifiedAt))
-                .font(.caption2)
-                .foregroundColor(.tertiary)
+            Spacer()
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
             store.selectedNote = note
@@ -187,6 +201,15 @@ struct NoteRowView: View {
             }
             .foregroundColor(.red)
         }
+    }
+    
+    private var previewText: String {
+        // Clean up the content for preview
+        let cleaned = note.content
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "  ", with: " ")
+        return cleaned
     }
     
     private func formatDate(_ date: Date) -> String {

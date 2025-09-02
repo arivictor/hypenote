@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var store = NotesStore()
+    @EnvironmentObject private var store: NotesStore
     
     var body: some View {
         NavigationSplitView {
@@ -23,4 +23,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(NotesStore())
 }
