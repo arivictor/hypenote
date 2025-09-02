@@ -1,4 +1,3 @@
-
 /*
     Project: HypeNote 📝
     Authors:
@@ -13,69 +12,72 @@ import Foundation
 
 struct Note: Identifiable, Hashable {
     let id = UUID()
-    var title: String
     var body: String
+    
+    var title: String {
+        body.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Untitled"
+    }
 }
 
 struct NoteDetailView: View {
     @Binding var note: Note
+    
     var body: some View {
-        VStack(alignment: .leading){
-            TextField("Title", text: $note.title)
-                .font(.title)
-                .padding(.bottom)
-            TextEditor(text: $note.body)
-                .font(.body)
-                .border(Color.white.opacity(0.5))
+        ZStack {
+            // Match system background for uniform look
+            Color(NSColor.windowBackgroundColor)
+                .ignoresSafeArea()
             
+            TextEditor(text: $note.body)
+                .scrollContentBackground(.hidden) // hide default white
+                .font(.body)
+                .padding()
+                .background(Color.clear)
         }
-        .padding()
-        .navigationTitle(note.title)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 #Preview {
-    @Previewable @State var sampleNote = Note(title: "preview", body: "Preview body")
+    @Previewable @State var sampleNote = Note(body: "preview\nPreview body")
     NoteDetailView(note: $sampleNote)
 }
 
 struct ContentView: View {
     @State private var notes: [Note] = [
-        Note(title: "Welcome", body: "Start writing notes here!")
+        Note(body: "Welcome\nStart writing notes here!")
     ]
     @State private var selectedNote: Note?
     
     var body: some View {
-        NavigationSplitView{
+        NavigationSplitView {
             List(selection: $selectedNote) {
-                ForEach(notes){ note in
+                ForEach(notes) { note in
                     Text(note.title)
                         .tag(note)
                 }
             }
-            .navigationTitle("My Notes")
             .listStyle(.sidebar)
             .frame(minWidth: 200)
             .toolbar {
-                Button("New Note"){
-                    let newNote = Note(title: "Untitled", body: "")
+                Button("New Note") {
+                    let newNote = Note(body: "Untitled")
                     notes.append(newNote)
                     selectedNote = newNote
                 }
             }
-        }
-    detail:
-        {
+        } detail: {
             if let note = selectedNote {
                 NoteDetailView(note: binding(for: note))
-            } else{
+            } else {
                 Text("Select a note")
                     .foregroundStyle(.secondary)
             }
         }
     }
+    
     private func binding(for note: Note) -> Binding<Note> {
-        guard let index = notes.firstIndex(where: { $0.id == note.id}) else {
+        guard let index = notes.firstIndex(where: { $0.id == note.id }) else {
             fatalError("Note not found")
         }
         return $notes[index]
@@ -86,12 +88,13 @@ struct ContentView: View {
     ContentView()
 }
 
-
 @main
 struct HypeNoteApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified)
     }
 }
